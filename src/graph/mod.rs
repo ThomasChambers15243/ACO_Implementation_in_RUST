@@ -1,5 +1,4 @@
 use core::fmt;
-use std::collections::HashMap;
 use std::fs;
 use std::hash::{Hash, Hasher};
 use rand::Rng;
@@ -34,51 +33,25 @@ impl PartialOrd for Bag {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
-pub struct Edge {
-    pub bag_i: Box<Bag>,
-    pub bag_j: Box<Bag>,
-}
-
-impl fmt::Display for Edge {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Edge: Bag_i {} <-> Bag_j {}", self.bag_i.number, self.bag_j.number)
-    }
-}
-
-impl Edge {
-    pub fn new(bag_i: Box<Bag>, bag_j: Box<Bag>) -> Self {
-        if bag_i < bag_j {
-            Edge { bag_i, bag_j }
-        } else {
-            Edge { bag_i: bag_j, bag_j: bag_i }
-        }
-    }
-
-    pub fn contains(&self, bag: &Box<Bag>) -> bool {
-        &self.bag_i == bag || &self.bag_j == bag
-    }
-}
-
 #[derive(Debug)]
 pub struct Graph {
     pub max_weight: f64,
     pub nodes: usize,
-    pub graph: Box<[Bag; 100]>, 
-    pub tau: HashMap<Edge, f64>,
+    pub graph: [Bag; 100], 
+    pub tau: [[f64;100];100],
 }
 
 impl Graph {
     pub fn construct_graph(beta: f64) -> Self {
         let (max_weight, bags) = load_data(beta);
         let nodes = bags.len();
-        let graph: [Bag; 100] = bags.try_into().unwrap();
+        let graph: [Bag; 100] = bags.try_into().unwrap();        
 
         Graph {
             max_weight,
             nodes,
-            graph: Box::new(graph),
-            tau: HashMap::new(),
+            graph,
+            tau: [[0.0; 100]; 100],
         }
     }
 
@@ -87,61 +60,56 @@ impl Graph {
         let bags = &self.graph;
 
         for i in 0..bags.len() {
-            for j in (i + 1)..bags.len() {
-                let bag_i = bags[i];
-                let bag_j = bags[j];
-
-                self.tau.insert(
-                    Edge::new(Box::new(bag_i), Box::new(bag_j)),
-                    rng.gen_range(1.0..2.0),
-                );
+            for j in 0..bags.len() {
+                if i != j {
+                    self.tau[i][j] = rng.gen_range(0.1..1.0);
+                }
             }
         }
     }
 
     pub fn get_availible_bags(
         &self,
-        current_bag: &Bag,
-        visited_bags: &Vec<Box<Bag>>,
+        current_bag: &usize,
+        visited_bags: &Vec<usize>,
         allowed_weight: f64,
-    ) -> Vec<Box<Bag>> {
+    ) -> Vec<usize> {
         self.graph
-            .iter()
+            .iter().enumerate()
             .filter(|&bag| {
-                bag.number != current_bag.number
-                    && !visited_bags.contains(&Box::new(*bag))
-                    && bag.weight <= allowed_weight
+                bag.0 != *current_bag
+                    && !visited_bags.contains(&&bag.0)
+                    && bag.1.weight <= allowed_weight
             })
-            .map(|&bag| Box::new(bag))
+            .map(|bag| bag.0)
             .collect()
     }
 
     pub fn select_path(
         &self,
-        bag_i: &Bag,
-        availible_bags: Vec<Box<Bag>>,
+        bag_i: &usize,
+        availible_bags: &Vec<usize>,
         alpha: f64,
-    ) -> Option<Box<Bag>> {
-        let wheel = self.create_selection_wheel(bag_i, &availible_bags, alpha);
+    ) -> Option<usize> {
+        let wheel = self.create_selection_wheel(bag_i, availible_bags, alpha);
         let choice = rand::thread_rng().gen_range(0.0..=1.0);
         availible_bags
-            .into_iter()
-            .zip(wheel.into_iter())
-            .find(|(_, rank)| choice <= *rank)
-            .map(|(bag, _)| bag)
+            .iter()
+            .zip(wheel.iter())
+            .find(|(_, &rank)| choice <= rank)
+            .map(|(bag, _)| *bag)
     }
 
     fn create_selection_wheel(
         &self,
-        bag_i: &Bag,
-        availible_bags: &[Box<Bag>],
+        bag_i: &usize,
+        availible_bags: &Vec<usize>,
         alpha: f64,
-    ) -> Vec<f64> {
+    ) -> Vec<f64> {        
         let probabilities: Vec<f64> = availible_bags
             .iter()
             .map(|bag| self.calculate_edge_probability(bag_i, bag, availible_bags, alpha))
             .collect();
-
         probabilities
             .iter()
             .scan(0.0, |cum_sum, &p| {
@@ -153,41 +121,41 @@ impl Graph {
 
     fn calculate_edge_probability(
         &self,
-        bag_i: &Bag,
-        bag_j: &Box<Bag>,
-        availible_bags: &[Box<Bag>],
+        bag_i: &usize,
+        bag_j: &usize,
+        availible_bags: &Vec<usize>,
         alpha: f64,
     ) -> f64 {
-        let t = self.tau[&Edge::new(Box::new(*bag_i), bag_j.clone())] * alpha;
-        let h = bag_j.h;
+        let t = self.tau[*bag_i][*bag_j] * alpha;
+        let h = self.graph[*bag_j].h;
         let sum_of_availible_bags = availible_bags
             .iter()
             .map(|bag| {
-                let t = self.tau[&Edge::new(Box::new(*bag_i), bag.clone())] * alpha;
-                t * bag.h
+                let t = self.tau[*bag_i][*bag] * alpha;
+                t * self.graph[*bag].h
             })
             .sum::<f64>();
         (t * h) / sum_of_availible_bags
     }
 
-    pub fn deposit_phero(&mut self, edge: Edge, tour_value: f64, best_solution: f64, p_rate: f64, decay_rate: f64) {
-        if let Some(tau_val) = self.tau.get_mut(&edge) {
-            *tau_val = (*tau_val * decay_rate) * (tour_value / best_solution) * p_rate;
-        }
+    pub fn deposit_phero(&mut self, edge: (usize, usize), tour_value: f64, best_solution: f64, p_rate: f64, decay_rate: f64) {
+        let tau_val = self.tau[edge.0][edge.1];
+        self.tau[edge.0][edge.1] = (tau_val * decay_rate) * (tour_value / best_solution) * p_rate;
+        
     }
 
-    pub fn print_all_edges_for_bag(&self, bag_i: &Bag) {
-        let mut count = 0.0;
-        let mut avg = 0.0;
-        for (edge, phero) in &self.tau {
-            if edge.contains(&Box::new(*bag_i)) {
-                println!("Edge: {}, Phero: {}", edge, phero);
-                avg += phero;
-                count += 1.0;
-            }
-        }
-        println!("Average Phero: {}", avg / count);
-    }
+    // pub fn print_all_edges_for_bag(&self, bag_i: &Bag) {
+    //     let mut count = 0.0;
+    //     let mut avg = 0.0;
+    //     for (edge, phero) in &self.tau {
+    //         if edge.contains(&Box::new(*bag_i)) {
+    //             println!("Edge: {}, Phero: {}", edge, phero);
+    //             avg += phero;
+    //             count += 1.0;
+    //         }
+    //     }
+    //     println!("Average Phero: {}", avg / count);
+    // }
 }
 
 fn load_data(beta: f64) -> (f64, Vec<Bag>) {

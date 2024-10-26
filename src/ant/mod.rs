@@ -1,13 +1,13 @@
-use crate::graph::{Bag, Edge ,Graph};
+use crate::graph::{self, Bag, Graph};
 use core::fmt;
 use std::cmp::Ordering;
 use rand::Rng;
 
 
 pub struct Colony {
-    pub graph: Box<Graph>,
+    pub graph: Graph,
     pub ants: Vec<Ant>,
-    pub best_path: (Vec<Box<Bag>>, f64, f64),
+    pub best_path: (Vec<usize>, f64, f64),
     pub num_of_fitness_evaluations: i64,
 }
 
@@ -21,7 +21,7 @@ impl fmt::Display for Colony {
             self.best_path.1,
             self.best_path.2,
             self.best_path.0.iter()
-                .map(|bag| format!("{}", bag.number))
+                .map(|bag| format!("{}", self.graph.graph[*bag].number))
                 .collect::<Vec<String>>().join(" -> ")
         )
     }
@@ -29,11 +29,9 @@ impl fmt::Display for Colony {
 
 impl Colony {
     pub fn new(mut graph: Graph) -> Self {
-        if graph.tau.is_empty() {
-            graph.initialize_tau();
-        }
+        graph.initialize_tau();
         Colony { 
-            graph: Box::new(graph),
+            graph: graph,
             ants: Vec::new(),
             // Best past tour, Cost/Weight
             best_path: (Vec::new(), 0.0, 0.0), 
@@ -49,7 +47,7 @@ impl Colony {
                 self.best_path.1,
                 self.best_path.2,
                 self.best_path.0.iter()
-                    .map(|bag| format!("{}", bag.number))
+                    .map(|bag| format!("{}", self.graph.graph[*bag].number))
                     .collect::<Vec<String>>().join(" -> ")
             );
         } else {
@@ -67,8 +65,8 @@ impl Colony {
         self.ants = Vec::new();
         let mut rng = rand::thread_rng();
         for _ in 0..num_of_ants {
-            let bag = self.graph.graph.get(rng.gen_range(0..self.graph.nodes)).unwrap().clone();
-            self.ants.push(Ant::birth(Box::new(bag)));
+            let bag = rng.gen_range(0..self.graph.nodes);
+            self.ants.push(Ant::birth(bag, &self.graph));
         }
         
     }
@@ -103,13 +101,12 @@ impl Colony {
         
         // Update phero levels for all edges traversed by an ant
         for ant in self.ants.iter() {
-            let tour_value: f64 = ant.calculate_tour_cost();
-            let bag_i: &Box<Bag> = ant.tour.get(0).unwrap();
-            let mut tour = ant.tour.iter();
-            // Skip first bag
-            tour.next();
-            for bag_j in tour {
-                self.graph.deposit_phero(Edge::new(bag_i.clone(), bag_j.clone()), tour_value, self.best_path.1, p_rate, decay_rate);
+            let tour_value: f64 = ant.calculate_tour_cost(&self.graph);
+            let mut bag_i: usize = *ant.tour.get(0).unwrap();
+            // Skip first bag_i
+            for bag_j in ant.tour.iter().skip(1) {
+                self.graph.deposit_phero((bag_i, *bag_j), tour_value, self.best_path.1, p_rate, decay_rate);
+                bag_i = *bag_j
             }
         }
     }
@@ -131,12 +128,13 @@ impl Colony {
             .map(|(index, _)| index)
             .unwrap();
 
-        let best_path: Vec<Box<Bag>> = self.ants
+        let best_path: Vec<usize> = self.ants
             .get(top_index).unwrap()
             .tour.iter()
             .map(|bag| bag.clone())
             .collect();
-        let path_weight = Colony::calcluate_tour_weight(&best_path);
+
+        let path_weight = Colony::calcluate_tour_weight(&best_path, &self.graph);
         self.best_path = (
             best_path,
             *ants_values.get(top_index).unwrap(),
@@ -163,14 +161,14 @@ impl Colony {
         self.ants.iter().map(|ant|ant.current_cost).sum()
     }
 
-    fn calcluate_tour_weight(tour: &Vec<Box<Bag>>) -> f64{
-        tour.iter().map(|bag| bag.weight).sum()
+    fn calcluate_tour_weight(tour: &Vec<usize>, graph: &Graph) -> f64{
+        tour.iter().map(|bag| graph.graph[*bag].weight).sum()
     }
 }
 
 pub struct Ant {
-    pub current_bag: Box<Bag>,
-    pub tour: Vec<Box<Bag>>,
+    pub current_bag: usize,
+    pub tour: Vec<usize>,
     // Tour cost and weight is tracked for performance at the 
     // small cost of memory
     pub current_cost: f64,
@@ -178,47 +176,52 @@ pub struct Ant {
 }
 
 impl Ant {
-    pub fn birth(bag: Box<Bag>) -> Self {
-        Ant {current_bag: bag.clone(), tour: vec![bag], current_cost: 0.0, current_weight: 0.0}
+    pub fn birth(bag: usize, graph: &Graph) -> Self {
+        Ant {
+            current_bag: bag, 
+            tour: vec![bag], 
+            current_cost: graph.graph[bag].cost, 
+            current_weight: graph.graph[bag].weight
+        }
     }
 
-    // Update ant for time step.
+    // Update ant for time step
     // Move ant from one node to the next, updating their tour
     // working within constraints
-    pub fn update_ant(&mut self, graph: &Box<Graph>, alpha: f64) {
-        let availible_bags: Vec<Box<Bag>> = graph.get_availible_bags(
+    pub fn update_ant(&mut self, graph: &Graph, alpha: f64) {
+        let availible_bags: Vec<usize> = graph.get_availible_bags(
             &self.current_bag,
             &self.tour,
             self.calculate_allowed_weight(graph.max_weight)
-        );
-        let new_bag = graph.select_path(&self.current_bag, availible_bags, alpha);                
+        );        
+        let new_bag = graph.select_path(&self.current_bag, &availible_bags, alpha);                
         if new_bag.is_some() { 
             let new_bag = new_bag.unwrap();
-            self.tour.push(new_bag.clone());
+            self.tour.push(new_bag);
             self.current_bag = new_bag;
-            self.current_cost += self.current_bag.cost;
-            self.current_weight += self.current_bag.weight;
+            self.current_cost += graph.graph[self.current_bag].cost;
+            self.current_weight += graph.graph[self.current_bag].weight;
         }
     }
     
-    pub fn calculate_tour_cost(&self) -> f64{
-        self.tour.iter().map(|bag| bag.cost).sum()
+    pub fn calculate_tour_cost(&self, graph: &Graph) -> f64{
+        self.tour.iter().map(|bag| graph.graph[*bag].cost).sum()
     }
     
-    pub fn calcluate_tour_weight(&self) -> f64 {
-        self.tour.iter().map(|bag| bag.weight).sum()
+    pub fn calcluate_tour_weight(&self, graph: &Graph) -> f64 {
+        self.tour.iter().map(|bag| graph.graph[*bag].weight).sum()
     }
     
     pub fn calculate_allowed_weight(&self, max_allowed_weight: f64) -> f64 {
         max_allowed_weight - self.current_weight
     }
 
-    pub fn print_ants_tour(&self) {
+    pub fn print_ants_tour(&self, graph: &Graph) {
         println!("___________________");
         for bag in self.tour.iter() {
-            print!("{} -> ", bag.number);
+            print!("{} -> ", graph.graph[*bag].number);
         }
-        println!("Total Cost: {}", self.calculate_tour_cost());
+        println!("Total Cost: {}", self.calculate_tour_cost(graph));
         println!("Length: {}", self.tour.len());
         println!("___________________");
     }
