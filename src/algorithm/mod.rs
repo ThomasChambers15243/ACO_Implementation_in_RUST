@@ -5,6 +5,7 @@ use crate::ant::Colony;
 use indicatif::ProgressBar;
 
 pub fn run(alpha: f64, beta: f64, decay_rate: f64, num_of_ants:i64, fitness_evals: i64, p_rate: f64, verbose: bool) -> HashMap<String, String> {
+    let mut count = 0;
     // Stores the results of the ACO
     let mut results:  HashMap<String, String> = HashMap::new();
     // Init Progress bar and colony, 
@@ -20,13 +21,16 @@ pub fn run(alpha: f64, beta: f64, decay_rate: f64, num_of_ants:i64, fitness_eval
     // Print results to console
     if verbose { write_verbose(&colony)}
     // Run the ACO until the number of evaluations has been met
+    count += 1;
     while colony.num_of_fitness_evaluations < fitness_evals {
         colony.init_ants(num_of_ants);
         colony.run_tours(alpha);
         colony.update_edges(decay_rate, p_rate);
-        bar.set_position(colony.num_of_fitness_evaluations as u64);
-        println!("In While");
+        if verbose { bar.set_position(colony.num_of_fitness_evaluations as u64); }
+        count+=1;
     }
+    println!("Final Count: {}", count);
+    println!("Final Fitness evals: {}", colony.num_of_fitness_evaluations);
     // Print results to console
     if verbose { write_verbose(&colony)}
     // Update results with final scores

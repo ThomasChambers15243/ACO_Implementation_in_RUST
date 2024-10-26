@@ -102,10 +102,11 @@ impl Colony {
         // Update phero levels for all edges traversed by an ant
         for ant in self.ants.iter() {
             let tour_value: f64 = ant.calculate_tour_cost(&self.graph);
+            let tour_weight: f64 = ant.calcluate_tour_weight(&self.graph);
             let mut bag_i: usize = *ant.tour.get(0).unwrap();
             // Skip first bag_i
             for bag_j in ant.tour.iter().skip(1) {
-                self.graph.deposit_phero((bag_i, *bag_j), tour_value, self.best_path.1, p_rate, decay_rate);
+                self.graph.deposit_phero((bag_i, *bag_j), tour_value, tour_weight, p_rate, decay_rate);
                 bag_i = *bag_j
             }
         }
@@ -131,7 +132,7 @@ impl Colony {
         let best_path: Vec<usize> = self.ants
             .get(top_index).unwrap()
             .tour.iter()
-            .map(|bag| bag.clone())
+            .map(|bag| *bag)
             .collect();
 
         let path_weight = Colony::calcluate_tour_weight(&best_path, &self.graph);

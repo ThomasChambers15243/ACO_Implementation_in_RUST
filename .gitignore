@@ -6,3 +6,5 @@ Cargo.lock
 *.csv
 
 results.csv
+perf.data
+perf.data.old
