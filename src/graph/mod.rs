@@ -149,11 +149,14 @@ impl Graph {
         availible_bags: &Vec<usize>,
         alpha: f64,
     ) -> Vec<f64> {        
+        // Collect probabilities
         let probabilities: Vec<f64> = availible_bags
             .iter()
             .map(|bag| self.calculate_edge_probability(bag_i, bag, availible_bags, alpha))
             .collect();
         
+        
+        // Collect cumulative probabbilities
         probabilities
             .iter()
             .scan(0.0, |cum_sum, &p| {
@@ -170,13 +173,13 @@ impl Graph {
         availible_bags: &Vec<usize>,
         alpha: f64,
     ) -> f64 {
-        let t = self.tau.get_edge(*bag_i, *bag_j) * alpha;
-        let h = self.graph[*bag_j].h;
+        let t: f64 = self.tau.get_edge(*bag_i, *bag_j).powf(alpha);
+        let h: f64 = self.graph[*bag_j].h;
         
-        let sum_of_availible_bags = availible_bags
+        let sum_of_availible_bags: f64 = availible_bags
             .iter()
             .map(|bag| {
-                let t = self.tau.get_edge(*bag_i, *bag) * alpha;
+                let t = self.tau.get_edge(*bag_i, *bag).powf(alpha);
                 t * self.graph[*bag].h
             })
             .sum::<f64>();
@@ -184,7 +187,7 @@ impl Graph {
     }
 
     pub fn deposit_phero(&mut self, edge: (usize, usize), tour_value: f64, tour_weight: f64, p_rate: f64) {
-        let value = (tour_weight*p_rate) / tour_value;
+        let value = (tour_value*p_rate) / tour_weight;
         self.tau.add_to_edge(edge.0, edge.1, value);
     }
 }
@@ -231,7 +234,6 @@ fn load_data(beta: f64) -> (f64, Vec<Bag>) {
             number += 1;
         }
     }
-
     (
         split_data.remove(0).strip_prefix("security van capacity: ").unwrap().parse().unwrap(),
         bags,
@@ -255,7 +257,9 @@ mod test  {
 
     #[test]
     fn path_selection() {
-        let probabilities: Vec<f64> = vec![0.2, 0.5, 0.7, 0.9];
+        let mut probabilities: Vec<f64> = vec![0.2, 0.3, 0.1, 0.4];
+        let availible_bags: Vec<i32> = vec![1,2,3,4];
+        //probabilities.sort_by(|a, b| a.partial_cmp(b).unwrap());
         let wheel: Vec<f64> = probabilities
         .iter()
         .scan(0.0, |cum_sum, &p| {
@@ -264,10 +268,11 @@ mod test  {
         })
         .collect();
     
-        //println!("{:?}", wheel);
-        // -> [0.2, 0.7, 1.4, 2.3]
+        println!("{:?}", probabilities);
+        println!("{:?}", wheel);
+        // [0.2, 0.3, 0.1, 0.4]
+        // [0.2, 0.5, 0.6, 1.0]
 
-        let availible_bags: Vec<i32> = vec![1,2,3,4];
 
         let choice = 0.1;
         assert_eq!(availible_bags
@@ -276,21 +281,21 @@ mod test  {
             .find(|(_, &rank)| choice <= rank)
             .map(|(bag, _)| *bag).unwrap(), 
             1);
-        let choice = 0.5;
+        let choice = 0.3;
         assert_eq!(availible_bags
             .iter()
             .zip(wheel.iter())
             .find(|(_, &rank)| choice <= rank)
             .map(|(bag, _)| *bag).unwrap(), 
             2);
-        let choice = 1.0;
+        let choice = 0.55;
         assert_eq!(availible_bags
             .iter()
             .zip(wheel.iter())
             .find(|(_, &rank)| choice <= rank)
             .map(|(bag, _)| *bag).unwrap(), 
             3);
-        let choice = 2.2;
+        let choice = 0.7;
         assert_eq!(availible_bags
             .iter()
             .zip(wheel.iter())

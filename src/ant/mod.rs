@@ -252,7 +252,7 @@ mod test {
     use std::cmp::Ordering;
     #[test]
     fn test_f64_order() {
-        let ants_values = vec![0.0, 32.32, 16.4, 100.0, 11.0];
+        let ants_values = vec![0.0, 32000.32, 16.4, 100.0, 11.0];
         println!("{:?}", ants_values);
         let top_index: usize = ants_values
         .iter()
@@ -261,6 +261,6 @@ mod test {
         .unwrap_or(Ordering::Equal))
         .map(|(index, _)| index)
         .unwrap();
-        assert_eq!(top_index, 3);
+        assert_eq!(top_index, 1);
     }    
 }
