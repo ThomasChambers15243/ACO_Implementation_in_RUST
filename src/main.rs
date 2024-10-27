@@ -63,10 +63,10 @@ fn main() {
             let number_of_runs: i64 = 1;
             let mut parameters: HashMap<String, Parameter> = HashMap::new();
             parameters.insert(String::from("alpha"), Parameter::Alpha(1.0));
-            parameters.insert(String::from("beta"), Parameter::Beta(3.0));
-            parameters.insert(String::from("decay_rate"), Parameter::DecayRate(0.5));
-            parameters.insert(String::from("p_rate"), Parameter::PRate(2.0));
-            parameters.insert(String::from("num_of_ants"), Parameter::NumOfAnts(10));
+            parameters.insert(String::from("beta"), Parameter::Beta(2.0));
+            parameters.insert(String::from("decay_rate"), Parameter::DecayRate(0.8));
+            parameters.insert(String::from("p_rate"), Parameter::PRate(1.0));
+            parameters.insert(String::from("num_of_ants"), Parameter::NumOfAnts(50));
             parameters.insert(String::from("fitness_evals"), Parameter::FitnessEvals(10000));
             let params: (f64, f64, f64, f64, i64, i64) = Parameter::extract_parameters(parameters);   
             for _ in 0..number_of_runs {                     
@@ -116,8 +116,8 @@ fn write_to_csv(path: &str, params: (f64, f64, f64, f64, i64, i64), results: Has
     let file = OpenOptions::new().append(true).open(path)?;
     let mut wtr = csv::Writer::from_writer(file);
 
-    let difference = results.get("initial_score").unwrap().parse::<f64>()? - results.get("final_score").unwrap().parse::<f64>()?;
-    let avg_difference = results.get("initial_avg").unwrap().parse::<f64>()? - results.get("final_avg").unwrap().parse::<f64>()?;
+    let difference = results.get("final_score").unwrap().parse::<f64>()? - results.get("initial_score").unwrap().parse::<f64>()?;
+    let avg_difference = results.get("final_avg").unwrap().parse::<f64>()? - results.get("initial_avg").unwrap().parse::<f64>()?;
 
     wtr.write_record(&[
         params.0.to_string(),

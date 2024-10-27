@@ -97,25 +97,26 @@ impl Colony {
             None => (),
         }
         
-        // TODO
-        // Add decay global after contirbutions
+        // Decay edges
         for i in 0..100 {
             for j in 0..100 {
                 let value = self.graph.tau.get_edge(i, j);
                 self.graph.tau.set_edge(i, j, value*decay_rate);
             }
         }
+
         // Update phero levels for all edges traversed by an ant
         for ant in self.ants.iter() {
             let tour_value: f64 = ant.calculate_tour_cost(&self.graph);
             let tour_weight: f64 = ant.calcluate_tour_weight(&self.graph);
             let mut bag_i: usize = *ant.tour.get(0).unwrap();
             // Skip first bag_i
-            for bag_j in ant.tour.iter().skip(1) {
-                self.graph.deposit_phero((bag_i, *bag_j), tour_value, tour_weight, p_rate, decay_rate);
+            for bag_j in ant.tour.iter().skip(1) {       
+                self.graph.deposit_phero((bag_i, *bag_j), tour_value, tour_weight, p_rate);                
                 bag_i = *bag_j
             }
         }
+        // Debugging Tracking
         let mut min = 1000000000000.0;
         let mut max = -1.0;
         let mut avg: Vec<f64> = vec![0.0];
@@ -137,27 +138,24 @@ impl Colony {
             return Some("Failed: Ants have not finished their tour".to_string());
         }
         self.num_of_fitness_evaluations += self.ants.len() as i64;
+        // Find all the ants values
         let ants_values: Vec<f64> = self.ants.iter().map(|ant| ant.current_cost).collect();
-
-        let top_index: usize = ants_values
+        
+        // Find the ant with the highest cost
+        let top_ant: &Ant = self.ants
+            .get(ants_values
             .iter()
             .enumerate()
-            .min_by(|(_, a), (_, b)| a.partial_cmp(b)
+            .max_by(|(_, a), (_, b)| a.partial_cmp(b)
             .unwrap_or(Ordering::Equal))
             .map(|(index, _)| index)
-            .unwrap();
+            .unwrap())
+            .unwrap();        
 
-        let best_path: Vec<usize> = self.ants
-            .get(top_index).unwrap()
-            .tour.iter()
-            .map(|bag| *bag)
-            .collect();
-
-        let path_weight = Colony::calcluate_tour_weight(&best_path, &self.graph);
         self.best_path = (
-            best_path,
-            *ants_values.get(top_index).unwrap(),
-            path_weight,
+            top_ant.tour.clone(),
+            top_ant.current_cost,
+            top_ant.current_weight,
         );
         None
     }
@@ -246,4 +244,23 @@ impl Ant {
         println!("Length: {}", self.tour.len());
         println!("___________________");
     }
+}
+
+
+#[cfg(test)]
+mod test {
+    use std::cmp::Ordering;
+    #[test]
+    fn test_f64_order() {
+        let ants_values = vec![0.0, 32.32, 16.4, 100.0, 11.0];
+        println!("{:?}", ants_values);
+        let top_index: usize = ants_values
+        .iter()
+        .enumerate()
+        .max_by(|(_, a), (_, b)| a.partial_cmp(b)
+        .unwrap_or(Ordering::Equal))
+        .map(|(index, _)| index)
+        .unwrap();
+        assert_eq!(top_index, 3);
+    }    
 }
