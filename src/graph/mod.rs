@@ -272,7 +272,7 @@ impl Graph {
             }
         }
     }
-//AKA2
+
     /// Deposits pheromones additions on edges
     /// Heristic is based upon the ratio of cost-to-weight, 
     /// also used by KRZYSZTOF SCHIFF as 
