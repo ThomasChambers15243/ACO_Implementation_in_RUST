@@ -31,6 +31,7 @@ pub fn run(alpha: f64, beta: f64, decay_rate: f64, num_of_ants:i64, fitness_eval
     }
     println!("Final Count: {}", count);
     println!("Final Fitness evals: {}", colony.num_of_fitness_evaluations);
+    println!("{:?}", colony.graph.tracking);
     // Print results to console
     if verbose { write_verbose(&colony)}
     // Update results with final scores

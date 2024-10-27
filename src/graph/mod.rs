@@ -1,4 +1,5 @@
 use core::fmt;
+use std::collections::HashMap;
 use std::fs;
 use std::hash::{Hash, Hasher};
 use std::path::Path;
@@ -40,18 +41,19 @@ pub struct Graph {
     pub nodes: usize,
     pub graph: [Bag; 100], 
     pub tau: Tau,
+    pub tracking: Vec<f64>
 }
 
 #[derive(Debug)]
 pub struct Tau {
-    matrix: [[f64;100];100],
+    matrix: [[f64;100];100]
 }
 
 impl Tau {
     pub fn new() -> Self {
         Tau {matrix: [[0.0; 100]; 100]}
     }
-    pub fn get_matrix(self) -> [[f64;100];100] {
+    pub fn get_matrix(&mut self) -> [[f64;100];100] {
         self.matrix
     }
     pub fn set_edge(&mut self, bag_i: usize, bag_j: usize, value: f64) {
@@ -88,6 +90,7 @@ impl Graph {
             nodes,
             graph,
             tau,
+            tracking: Vec::new(),
         }
     }
 
@@ -128,8 +131,6 @@ impl Graph {
         alpha: f64,
     ) -> Option<usize> {
         let wheel: Vec<f64> = self.create_selection_wheel(bag_i, availible_bags, alpha);
-        // TODO, assetion fails so seleciton process is not working as intended
-        assert!(wheel.len() != 0);
         let range: f64 = *wheel.get(wheel.len()-1).unwrap();
         let choice: f64 = rand::thread_rng().gen_range(0.0..=range);
         availible_bags
@@ -179,15 +180,15 @@ impl Graph {
     }
 
     pub fn deposit_phero(&mut self, edge: (usize, usize), tour_value: f64, tour_weight: f64, p_rate: f64, decay_rate: f64) {
-        let tau_val = self.tau.get_edge(edge.0, edge.1);
-        let value = (tau_val * decay_rate) + (tour_value / tour_weight) * p_rate;
-        self.tau.set_edge(edge.0, edge.1, value);
+        //let tau_val = self.tau.get_edge(edge.0, edge.1);
+        let value = (tour_value*p_rate) / tour_weight;
+        self.tau.add_to_edge(edge.0, edge.1, value);
     }
 }
 
 fn load_data(beta: f64) -> (f64, Vec<Bag>) {
-    //let path = Path::new("src\\BankProblem.txt");
-    let path = Path::new("/home/tomchambers/Documents/Exeter/409_aco/src/BankProblem.txt");
+    let path = Path::new("src\\BankProblem.txt");
+    //let path = Path::new("/home/tomchambers/Documents/Exeter/409_aco/src/BankProblem.txt");
     println!("{:?}", path.to_str());
     let data = fs::read_to_string(path).expect("Unable to read file");
 

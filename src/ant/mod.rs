@@ -71,8 +71,6 @@ impl Colony {
         
     }
 
-    // TODO: Possible optimization here
-    // Dont run through ants twice
     pub fn run_tours(&mut self, alpha: f64) -> bool {
         while !self.are_all_tours_finished() {
             self.time_step(alpha);
@@ -99,6 +97,14 @@ impl Colony {
             None => (),
         }
         
+        // TODO
+        // Add decay global after contirbutions
+        for i in 0..100 {
+            for j in 0..100 {
+                let value = self.graph.tau.get_edge(i, j);
+                self.graph.tau.set_edge(i, j, value*decay_rate);
+            }
+        }
         // Update phero levels for all edges traversed by an ant
         for ant in self.ants.iter() {
             let tour_value: f64 = ant.calculate_tour_cost(&self.graph);
@@ -110,6 +116,18 @@ impl Colony {
                 bag_i = *bag_j
             }
         }
+        let mut min = 1000000000000.0;
+        let mut max = -1.0;
+        let mut avg: Vec<f64> = vec![0.0];
+        for i in self.graph.tau.get_matrix() {
+            for j in i {
+                if j < min { min = j;}
+                if j > max { max = j;}
+                avg.push(j);            
+            }
+        }
+        self.graph.tracking.push(max-min);
+        self.graph.tracking.push(avg.iter().sum());
     }
 
     // Returns true if successful
@@ -195,13 +213,15 @@ impl Ant {
             &self.tour,
             self.calculate_allowed_weight(graph.max_weight)
         );        
-        let new_bag = graph.select_path(&self.current_bag, &availible_bags, alpha);                
-        if new_bag.is_some() { 
-            let new_bag = new_bag.unwrap();
-            self.tour.push(new_bag);
-            self.current_bag = new_bag;
-            self.current_cost += graph.graph[self.current_bag].cost;
-            self.current_weight += graph.graph[self.current_bag].weight;
+        if !availible_bags.is_empty() {        
+            let new_bag = graph.select_path(&self.current_bag, &availible_bags, alpha);                
+            if new_bag.is_some() { 
+                let new_bag = new_bag.unwrap();
+                self.tour.push(new_bag);
+                self.current_bag = new_bag;
+                self.current_cost += graph.graph[self.current_bag].cost;
+                self.current_weight += graph.graph[self.current_bag].weight;
+            }
         }
     }
     

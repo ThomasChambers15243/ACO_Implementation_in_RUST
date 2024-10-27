@@ -63,10 +63,10 @@ fn main() {
             let number_of_runs: i64 = 1;
             let mut parameters: HashMap<String, Parameter> = HashMap::new();
             parameters.insert(String::from("alpha"), Parameter::Alpha(1.0));
-            parameters.insert(String::from("beta"), Parameter::Beta(2.5));
-            parameters.insert(String::from("decay_rate"), Parameter::DecayRate(0.2));
-            parameters.insert(String::from("p_rate"), Parameter::PRate(1.0));
-            parameters.insert(String::from("num_of_ants"), Parameter::NumOfAnts(100));
+            parameters.insert(String::from("beta"), Parameter::Beta(3.0));
+            parameters.insert(String::from("decay_rate"), Parameter::DecayRate(0.5));
+            parameters.insert(String::from("p_rate"), Parameter::PRate(2.0));
+            parameters.insert(String::from("num_of_ants"), Parameter::NumOfAnts(10));
             parameters.insert(String::from("fitness_evals"), Parameter::FitnessEvals(10000));
             let params: (f64, f64, f64, f64, i64, i64) = Parameter::extract_parameters(parameters);   
             for _ in 0..number_of_runs {                     
