@@ -5,6 +5,7 @@ use core::fmt;
 use rand::Rng;
 
 /// Constant size of the number of bags in the text file
+/// !!! Important !!!
 /// Modify this carfully, depending on the BankProblem files
 /// you use
 const BAG_NUMBER: usize = 100;
@@ -37,7 +38,11 @@ impl PartialOrd for Bag {
     }
 }
 
-/// Represents the graph used to store bags and meta data
+/// Represents the graph used to store bags and meta data.
+/// Vectors are used over arrays to avoid stack overflow errors
+/// with large data sets. Since vectors are only accessed, 
+/// capacity change is never needed after creation so 
+/// the performance loss is minimal and acceptable.
 /// max_weight: The max weight constraint of the problem
 /// nodes: the number of nodes in the problem
 /// graph: Constant size collection of Bags with a fixed indicies
@@ -46,7 +51,7 @@ impl PartialOrd for Bag {
 pub struct Graph {
     pub max_weight: f64,
     pub nodes: usize,
-    pub graph: [Bag; BAG_NUMBER], 
+    pub graph: Vec<Bag>,
     pub tau: Tau,
 }
 
@@ -58,18 +63,18 @@ pub struct Graph {
 /// See modules tests for validation
 #[derive(Debug)]
 pub struct Tau {
-    matrix: [[f64;BAG_NUMBER]; BAG_NUMBER]
+    matrix: Vec<Vec<f64>>
 }
 
 impl Tau {
     /// Creates a new matrix to store pheromone values in
     pub fn new() -> Self {
-        Tau {matrix: [[0.0; BAG_NUMBER]; BAG_NUMBER]}
+        Tau {matrix: vec![vec![0.0; BAG_NUMBER]; BAG_NUMBER]}
     }
     
     /// Returns the raw metrix, use with caution
-    pub fn get_matrix(&mut self) -> [[f64; BAG_NUMBER]; BAG_NUMBER] {
-        self.matrix
+    pub fn get_matrix(&mut self) -> &Vec<Vec<f64>>{//[[f64; BAG_NUMBER]; BAG_NUMBER] {
+        &self.matrix
     }
     
     /// Sets the value of an edge to the given f64 value
@@ -110,7 +115,7 @@ impl Graph {
     pub fn construct_graph(beta: f64) -> Self {
         let (max_weight, bags) = load_data(beta);
         let nodes = bags.len();
-        let graph: [Bag; BAG_NUMBER] = bags.try_into().unwrap();        
+        let graph: Vec<Bag> = bags.try_into().unwrap();        
         let tau = Tau::new();
         Graph {
             max_weight,
