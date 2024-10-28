@@ -14,4 +14,4 @@ def generate_bags(filename, N):
 
 # N for number of bags
 N = 500
-generate_bags(f"src/problem{N}.txt", N)
+generate_bags(f"src/BankProblem{N}.txt", N)

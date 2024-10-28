@@ -269,10 +269,18 @@ impl Graph {
     /// the evaporation_rate. Evaporation rate is
     /// used as 1 - evaporation_rate
     pub fn evaporation_edges(&mut self, evaporation_rate: f64) {
-        for i in 0..100 {
-            for j in 0..100 {
-                let value = self.tau.get_edge(i, j);
-                self.tau.set_edge(i, j, value * (1.0-evaporation_rate));
+        for i in 0..self.graph.len()-1 {
+            for j in i+1..self.graph.len() {
+                // Only evaporate bag edges
+                if i != j {
+                    let value = self.tau.get_edge(i, j);
+                    // To avoid overflow errors with very small floats, if the value is small enough,
+                    // stop evaporation. This has no affect on the algorithm due to the small probability
+                    // of the value
+                    if value > 0.0000000000000000000001 {
+                        self.tau.set_edge(i, j, value * (1.0 - evaporation_rate));
+                    }
+                }
             }
         }
     }

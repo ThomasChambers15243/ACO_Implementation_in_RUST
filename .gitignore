@@ -3,8 +3,13 @@
 Cargo.lock
 .vscode/
 /target/
-*.csv
 
-results.csv
+# Only commit backed up csv data as that contains the final data results
+csv/
+csv_large/
+
+# Performance Data
 perf.data
-perf.data.old
+
+
+

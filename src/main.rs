@@ -8,12 +8,19 @@ use dialoguer::{theme::ColorfulTheme, Input, Select};
 pub mod algorithm;
 pub mod graph;
 pub mod ant;
+pub mod research_set;
+use research_set::ResearchSet;
 
 /// Static to track csv creation as to not overwrite the csv headers
-static mut CSV_INITILIZED: bool = false;
+/// !!! Important !!!
+/// If the csv file has data written which should not be overwritten
+/// set this too true, then all data will be appended and the headers
+/// will not be changed and re-written
+static mut CSV_INITILIZED: bool = true;
 
 /// Handles all parameter inputs and types of f64 | i64
-enum Parameter {
+#[derive(Clone)]
+pub enum Parameter {
     Alpha(f64),
     Beta(f64),
     EvaporationRate(f64),
@@ -33,7 +40,7 @@ impl Parameter {
     ///  i64: num_of_ants,
     ///  i64: fitness_evals
     /// )
-    pub fn extract_parameters(parameters: HashMap<String, Parameter>) -> (f64, f64, f64, f64, i64, i64) {
+    pub fn extract_parameters(parameters: &HashMap<String, Parameter>) -> (f64, f64, f64, f64, i64, i64) {
         (
             parameters.get("alpha").and_then(Parameter::as_f64).unwrap(),
             parameters.get("beta").and_then(Parameter::as_f64).unwrap(),
@@ -61,7 +68,7 @@ impl Parameter {
 
 fn main() {
     // Constant choices for algorithm running
-    let choices = &["DEFAULT", "CUSTOM"];
+    let choices = &["DEFAULT", "CUSTOM", "EXPERIMENT"];
 
     let choice = Select::with_theme(&ColorfulTheme::default())
         .with_prompt("Enter values or run default")
@@ -79,39 +86,56 @@ fn main() {
             parameters.insert(String::from("evaporation_rate"), Parameter::EvaporationRate(0.1));
             parameters.insert(String::from("p_rate"), Parameter::PRate(1.0));
             parameters.insert(String::from("num_of_ants"), Parameter::NumOfAnts(20));
-            parameters.insert(String::from("fitness_evals"), Parameter::FitnessEvals(10000));
-            let number_of_runs: i64 = 5;
-            let path: &str = "csv/resultsB.csv";
-            let params: (f64, f64, f64, f64, i64, i64) = Parameter::extract_parameters(parameters);   
+            parameters.insert(String::from("fitness_evals"), Parameter::FitnessEvals(100));
+            let number_of_runs: i64 = 1;
+            let path: &str = "csv/results.csv";
             // Runs algorithm with default params
             println!("Running with DEFAULT settings...");
-            for _ in 0..number_of_runs {                     
-                let results: HashMap<String, String> = run(params);
-                // Writes results
-                match write_to_csv(path, params, results) {
-                    Ok(_) => println!("Results written"),
-                    Err(e) => println!("{}", e),
-                }
+            run_experiment(&parameters, path, number_of_runs, 1);
+        },
+        "EXPERIMENT" => {
+            let number_of_runs: i64 = 2;
+            let mut path: &str = "csv/results_evaporation.csv";
+
+            let experiment_params: Vec<HashMap<String, Parameter>> = ResearchSet::set_evaporation_params(vec![0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8]);
+            for (parameter_run, parameters) in experiment_params.into_iter().enumerate() {
+                run_experiment(&parameters, path, number_of_runs, parameter_run+1);
             }
-        }
+
+            path = "csv/results_ant_num.csv";
+            let experiment_params: Vec<HashMap<String, Parameter>> = ResearchSet::set_ant_number_params(vec![2,5,10,15,20,30,50,100]);
+            for (parameter_run, parameters) in experiment_params.into_iter().enumerate() {
+                run_experiment(&parameters, path, number_of_runs, parameter_run+1);
+            }
+
+            path = "csv/results_p_rate.csv";
+            let experiment_params: Vec<HashMap<String, Parameter>> = ResearchSet::set_p_rate_params(vec![0.5,1.0,2.0,3.0,4.0,5.0,6.0,7.0]);
+            for (parameter_run, parameters) in experiment_params.into_iter().enumerate() {
+                run_experiment(&parameters, path, number_of_runs, parameter_run+1);
+            }
+            
+        },
         "CUSTOM" => {
             // User enters custom params with validation for data types
             let parameters = get_parameters();
             let number_of_runs: i64 = input_wrapper::<i64>("Enter the number of runs for the algorithm");
-            let csv_path: String = input_wrapper::<String>("Enter the CSV Path (with .csv as the suffix)");
-            let params: (f64, f64, f64, f64, i64, i64) = Parameter::extract_parameters(parameters);
+            let path: String = input_wrapper::<String>("Enter the CSV Path (with .csv as the suffix)");
             println!("Running with custome parameters...");
             // Runs algorithm with default params
-            for _ in 0..number_of_runs {
-                let results: HashMap<String, String>  = run(params);
-                // Write reults
-                match write_to_csv(csv_path.as_str(), params, results) {
-                    Ok(_) => println!("Results written"),
-                    Err(e) => println!("{}", e),
-                }
-            }
+            run_experiment(&parameters, path.as_str(), number_of_runs, 1);
         }
         _ => unreachable!("Invalid selection"),
+    }
+}
+
+fn run_experiment(parameters: &HashMap<String, Parameter>, path:&str, number_of_runs: i64, parameter_run: usize) {
+    for _ in 0..number_of_runs {
+        let params: (f64, f64, f64, f64, i64, i64) = Parameter::extract_parameters(parameters);
+        let results: HashMap<String, String> = run(params);
+        match write_to_csv(path, params, results, parameter_run) {
+            Ok(_) => println!("Results written"),
+            Err(e) => println!("{}", e),
+        }
     }
 }
 
@@ -138,7 +162,7 @@ fn run(params: (f64, f64, f64, f64, i64, i64)) -> HashMap<String, String> {
 } 
 
 // Writes ACO's results to the csv
-fn write_to_csv(path: &str, params: (f64, f64, f64, f64, i64, i64), results: HashMap<String, String>) -> Result<(), Box<dyn Error>> {
+fn write_to_csv(path: &str, params: (f64, f64, f64, f64, i64, i64), results: HashMap<String, String>, parameter_run: usize) -> Result<(), Box<dyn Error>> {
     init_csv(path)?;
     
     // Open the file in append mode as to note write over previous data
@@ -150,6 +174,7 @@ fn write_to_csv(path: &str, params: (f64, f64, f64, f64, i64, i64), results: Has
     
     // Write record
     wtr.write_record(&[
+        parameter_run.to_string(),
         params.0.to_string(),
         params.1.to_string(),
         params.2.to_string(),
@@ -178,6 +203,7 @@ fn init_csv(path: &str) -> Result<(), Box<dyn Error>> {
             let mut wtr = csv::Writer::from_path(path)?;
             wtr.write_record(
             &[
+                "Parameter",
                 "Alpha", 
                 "Beta", 
                 "Evaporation_Rate",
