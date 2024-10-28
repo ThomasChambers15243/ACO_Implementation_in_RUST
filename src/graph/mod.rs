@@ -266,14 +266,13 @@ impl Graph {
     }
 
     /// Evaporate pheromones from edges according to 
-    /// the ecaporation_rate. This ACO implemenation uses
-    /// the given rate AS the direct scalar rate, rather than
-    /// (1-P).
+    /// the evaporation_rate. Evaporation rate is
+    /// used as 1 - evaporation_rate
     pub fn evaporation_edges(&mut self, evaporation_rate: f64) {
         for i in 0..100 {
             for j in 0..100 {
                 let value = self.tau.get_edge(i, j);
-                self.tau.set_edge(i, j, value * evaporation_rate);
+                self.tau.set_edge(i, j, value * (1.0-evaporation_rate));
             }
         }
     }
@@ -303,8 +302,8 @@ impl Graph {
 /// 2. Ensure the problem .txt file is in the exact format is was given
 ///    in the problem set.
 fn load_data(beta: f64) -> (f64, Vec<Bag>) {
-    let path = Path::new("src\\BankProblem.txt");
-    //let path = Path::new("/home/tomchambers/Documents/Exeter/409_aco/src/BankProblem.txt");
+    //let path = Path::new("src\\BankProblem.txt");
+    let path = Path::new("/home/tomchambers/Documents/Exeter/409_aco/src/BankProblem.txt");
     println!("{:?}", path.to_str());
     let data = fs::read_to_string(path).expect("Unable to read file");
 

@@ -76,18 +76,19 @@ fn main() {
             let mut parameters: HashMap<String, Parameter> = HashMap::new();
             parameters.insert(String::from("alpha"), Parameter::Alpha(1.0));
             parameters.insert(String::from("beta"), Parameter::Beta(2.0));
-            parameters.insert(String::from("evaporation_rate"), Parameter::EvaporationRate(0.9));
+            parameters.insert(String::from("evaporation_rate"), Parameter::EvaporationRate(0.1));
             parameters.insert(String::from("p_rate"), Parameter::PRate(1.0));
             parameters.insert(String::from("num_of_ants"), Parameter::NumOfAnts(20));
-            parameters.insert(String::from("fitness_evals"), Parameter::FitnessEvals(1000));
+            parameters.insert(String::from("fitness_evals"), Parameter::FitnessEvals(10000));
+            let number_of_runs: i64 = 5;
+            let path: &str = "csv/resultsB.csv";
             let params: (f64, f64, f64, f64, i64, i64) = Parameter::extract_parameters(parameters);   
-            let number_of_runs: i64 = 1;
             // Runs algorithm with default params
             println!("Running with DEFAULT settings...");
             for _ in 0..number_of_runs {                     
                 let results: HashMap<String, String> = run(params);
                 // Writes results
-                match write_to_csv("results.csv", params, results) {
+                match write_to_csv(path, params, results) {
                     Ok(_) => println!("Results written"),
                     Err(e) => println!("{}", e),
                 }
