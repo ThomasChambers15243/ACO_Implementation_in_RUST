@@ -94,16 +94,16 @@ fn main() {
             run_experiment(&parameters, path, number_of_runs, 1);
         },
         "EXPERIMENT" => {
-            let number_of_runs: i64 = 2;
-            let mut path: &str = "csv/results_evaporation.csv";
-
-            let experiment_params: Vec<HashMap<String, Parameter>> = ResearchSet::set_evaporation_params(vec![0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8]);
+            let number_of_runs: i64 = 5;
+            let mut path = "csv/results_ant_num.csv";            
+            
+            let experiment_params: Vec<HashMap<String, Parameter>> = ResearchSet::set_ant_number_params(vec![2,5,10,15,20,30,50,100]);
             for (parameter_run, parameters) in experiment_params.into_iter().enumerate() {
                 run_experiment(&parameters, path, number_of_runs, parameter_run+1);
             }
-
-            path = "csv/results_ant_num.csv";
-            let experiment_params: Vec<HashMap<String, Parameter>> = ResearchSet::set_ant_number_params(vec![2,5,10,15,20,30,50,100]);
+            
+            path = "csv/results_evaporation.csv";
+            let experiment_params: Vec<HashMap<String, Parameter>> = ResearchSet::set_evaporation_params(vec![0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8]);
             for (parameter_run, parameters) in experiment_params.into_iter().enumerate() {
                 run_experiment(&parameters, path, number_of_runs, parameter_run+1);
             }

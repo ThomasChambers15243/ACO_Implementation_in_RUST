@@ -59,15 +59,15 @@ impl ResearchSet {
         experiment
     }
 
-    fn set_default_parameters() -> HashMap<String, Parameter> {
+    pub fn set_default_parameters() -> HashMap<String, Parameter> {
         let mut parameters: HashMap<String, Parameter> = HashMap::new();
         // Set Params
         parameters.insert(String::from("alpha"), Parameter::Alpha(1.0));
         parameters.insert(String::from("beta"), Parameter::Beta(2.0));
-        parameters.insert(String::from("evaporation_rate"), Parameter::EvaporationRate(0.5));
+        parameters.insert(String::from("evaporation_rate"), Parameter::EvaporationRate(0.1));
         parameters.insert(String::from("p_rate"), Parameter::PRate(1.0));
-        parameters.insert(String::from("num_of_ants"), Parameter::NumOfAnts(30));
-        parameters.insert(String::from("fitness_evals"), Parameter::FitnessEvals(200));
+        parameters.insert(String::from("num_of_ants"), Parameter::NumOfAnts(50));
+        parameters.insert(String::from("fitness_evals"), Parameter::FitnessEvals(10000));
         
         parameters
     }

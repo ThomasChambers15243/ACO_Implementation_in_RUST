@@ -3,9 +3,9 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 # Load each dataset
-data_ant_num = pd.read_csv("csv/results_ant_num.csv")
-data_p_rate = pd.read_csv("csv/results_p_rate.csv")
-data_evaporation = pd.read_csv("csv/results_evaporation.csv")
+data_ant_num = pd.read_csv("csv_large/results_ant_num.csv")
+data_p_rate = pd.read_csv("csv_large/results_p_rate.csv")
+data_evaporation = pd.read_csv("csv_large/results_evaporation.csv")
 
 # Plot 
 plt.figure(figsize=(18, 8))
@@ -75,9 +75,9 @@ xs = [
 plt.figure(figsize=(12, 6))
 sns.lineplot(data=avg_combined, x='Parameter', y='Top_Fitness', hue='Parameter_Type', marker='o')
 plt.title('Mean Top Value Across Parameter Changes')
-plt.xlabel('Value per Perameter\nAll other values were set to their default values')
+plt.xlabel('Value per Perameter')
 plt.ylabel('Mean Top Fitness')
 plt.xticks(ticks=range(1, 9), labels=[f'{i}' for i in xs])
 plt.grid()
-plt.legend(title='Parameters Changed')
+plt.legend(title='Parameters Changed',prop={"size": 20})
 plt.show()

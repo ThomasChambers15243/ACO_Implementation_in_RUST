@@ -1,4 +1,4 @@
-security van capacity: 295
+security van capacity: 400
  bag 1:
   weight: 6.1
   value: 61
