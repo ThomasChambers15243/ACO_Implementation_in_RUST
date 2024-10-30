@@ -2,10 +2,15 @@ use std::collections::HashMap;
 
 use crate::Parameter;
 
+/// Sets up parameter's for the experiements
+/// 
+/// If the experiment option is chosen in the menu, then
+/// the parameters for the tests will be pulled from here
+/// Edit values from here for the experiement
 pub struct ResearchSet {}
 
 impl ResearchSet {
-
+    /// Sets the Params for the nunber of ants
     pub fn set_ant_number_params(values: Vec<i64>) -> Vec<HashMap<String, Parameter>> {
 
         let mut default: HashMap<String, Parameter> = ResearchSet::set_default_parameters();
@@ -23,7 +28,7 @@ impl ResearchSet {
         experiment
     }
 
-    
+    /// Sets the Params for the evaporation rate
     pub fn set_evaporation_params(values: Vec<f64>) -> Vec<HashMap<String, Parameter>> {
 
         let mut default: HashMap<String, Parameter> = ResearchSet::set_default_parameters();
@@ -41,7 +46,7 @@ impl ResearchSet {
         experiment
     }
 
-
+    /// Sets the Params for pheromone rate
     pub fn set_p_rate_params(values: Vec<f64>) -> Vec<HashMap<String, Parameter>> {
 
         let mut default: HashMap<String, Parameter> = ResearchSet::set_default_parameters();
@@ -59,9 +64,10 @@ impl ResearchSet {
         experiment
     }
 
+    /// Sets the default parameters to be used in conjunction with
+    /// the dependent parameter being tested
     pub fn set_default_parameters() -> HashMap<String, Parameter> {
         let mut parameters: HashMap<String, Parameter> = HashMap::new();
-        // Set Params
         parameters.insert(String::from("alpha"), Parameter::Alpha(1.0));
         parameters.insert(String::from("beta"), Parameter::Beta(2.0));
         parameters.insert(String::from("evaporation_rate"), Parameter::EvaporationRate(0.1));

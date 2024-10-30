@@ -2,6 +2,14 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+### File to run the anaylsis on the given csv data
+### Prduces two plots
+### The first one contains three plots comparing the 
+### initial search for that parameter test to the last
+### search.
+### The last plot compares all of them together on the 
+### same graph
+
 # Load each dataset
 data_ant_num = pd.read_csv("csv_large/results_ant_num.csv")
 data_p_rate = pd.read_csv("csv_large/results_p_rate.csv")
