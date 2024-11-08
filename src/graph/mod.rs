@@ -293,7 +293,7 @@ impl Graph {
     /// While minimising weight is not an objective, bags with a lower weight allow for more bags,
     /// which allows for a higher potential of a higher cost. However, just minimising weight would
     /// ignore the actual cost objective. Therefore, the ratio of cost-weight is taken, since
-    /// the a higher ratio would suggust a higher value bag, in respect to constructing a better tour.
+    /// a higher ratio would suggust a higher value bag, in respect to constructing a better tour.
     /// The pheromone value is incremented by the tour's total cost divided by the tour's total weight.
     /// The tour's cost is multiplied by the pheromone weight, allowing for modification through
     /// experimeants without affecting the heristic's format.
@@ -310,8 +310,8 @@ impl Graph {
 /// 2. Ensure the problem .txt file is in the exact format is was given
 ///    in the problem set.
 fn load_data(beta: f64) -> (f64, Vec<Bag>) {
-    //let path = Path::new("src\\BankProblem.txt");
-    let path = Path::new("/home/tomchambers/Documents/Exeter/409_aco/src/BankProblem.txt");
+    let path = Path::new("src\\BankProblem.txt");
+    //let path = Path::new("/home/tomchambers/Documents/Exeter/409_aco/src/BankProblem.txt");
     println!("{:?}", path.to_str());
     let data = fs::read_to_string(path).expect("Unable to read file");
 
